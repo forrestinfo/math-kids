@@ -1,0 +1,8 @@
+{
+  "ref": "master",
+  "inputs": {
+    "os": "macos-latest",
+    "target": "mac",
+    "arch": "universal"
+  }
+}

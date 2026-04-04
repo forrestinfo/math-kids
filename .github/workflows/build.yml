@@ -1,0 +1,94 @@
+name: Build Desktop App
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'math-kids/**'
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-ci:
+    if: github.event_name != 'workflow_dispatch'
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: win
+            arch: x64
+          - os: windows-latest
+            target: win
+            arch: arm64
+          - os: ubuntu-latest
+            target: linux
+            arch: x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build & Package
+        run: |
+          npx vite build
+          npx electron-builder --${{ matrix.target }} --${{ matrix.arch }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload to GitHub Release
+        run: |
+          PLATFORM="${{ matrix.target }}"
+          ARCH="${{ matrix.arch }}"
+          if [ "$PLATFORM" = "win" ]; then
+            EXT="zip"
+            FIND_EXPR='-name "*.exe" -type f'
+          else
+            EXT="tar.gz"
+            FIND_EXPR='-name "*.tar.gz" -type f'
+          fi
+          FILE=$(find release -type f $FIND_EXPR | head -1)
+          if [ -n "$FILE" ]; then
+            gh release upload v1.0.0-gaming "$FILE" --clobber --repo forrestinfo/math-kids
+            echo "Uploaded $FILE"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-mac:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build & Package
+        run: |
+          npx vite build
+          npx electron-builder --mac --universal
+      - name: Upload .app to GitHub Release
+        run: |
+          APP_DIR=$(find release -name "*.app" -type d | head -1)
+          if [ -n "$APP_DIR" ]; then
+            APP_NAME=$(basename "$APP_DIR")
+            ZIP_PATH="release/math-kids-mac-universal.zip"
+            cd release
+            rm -f "$ZIP_PATH"
+            zip -r "$ZIP_PATH" "$APP_NAME"
+            cd ..
+            gh release upload v1.0.0-gaming "$ZIP_PATH" --clobber --repo forrestinfo/math-kids
+            echo "✅ Uploaded mac app to release"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

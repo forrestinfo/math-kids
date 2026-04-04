@@ -1,0 +1,44 @@
+{
+  "appId": "com.mathkids.app",
+  "productName": "math-kids",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/**/*",
+    "dist-electron/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "public/audio",
+      "to": "audio",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "public/images",
+      "to": "images",
+      "filter": ["**/*"]
+    }
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "dir",
+        "arch": ["x64", "arm64"]
+      }
+    ]
+  },
+  "mac": {
+    "target": [
+      {
+        "target": "dir",
+        "arch": ["universal"]
+      }
+    ],
+    "category": "public.app-category.education"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
+  }
+}
