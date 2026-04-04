@@ -44,18 +44,14 @@ jobs:
       - name: Upload to GitHub Release
         run: |
           PLATFORM="${{ matrix.target }}"
-          ARCH="${{ matrix.arch }}"
           if [ "$PLATFORM" = "win" ]; then
-            EXT="zip"
-            FIND_EXPR='-name "*.exe" -type f'
+            FILE=$(find release -name "*.exe" -type f | head -1)
           else
-            EXT="tar.gz"
-            FIND_EXPR='-name "*.tar.gz" -type f'
+            FILE=$(find release -name "*.tar.gz" -type f | head -1)
           fi
-          FILE=$(find release -type f $FIND_EXPR | head -1)
           if [ -n "$FILE" ]; then
             gh release upload v1.0.0-gaming "$FILE" --clobber --repo forrestinfo/math-kids
-            echo "Uploaded $FILE"
+            echo "Uploaded: $FILE"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -77,18 +73,38 @@ jobs:
         run: |
           npx vite build
           npx electron-builder --mac --universal
-      - name: Upload .app to GitHub Release
+      - name: Debug: list release dir
         run: |
-          APP_DIR=$(find release -name "*.app" -type d | head -1)
-          if [ -n "$APP_DIR" ]; then
-            APP_NAME=$(basename "$APP_DIR")
+          echo "=== Release directory ==="
+          ls -la release/
+          echo "=== Find .app directories ==="
+          find release -type d -name "*.app" 2>/dev/null
+          echo "=== Find .app Contents ==="
+          find release -type f -name "Contents" 2>/dev/null | head -5
+      - name: Upload .app as Release asset
+        run: |
+          # Try multiple possible locations
+          APP_PATH=""
+          for path in \
+            "release/mac-universal/math-kids.app" \
+            "$(find release -type d -name '*.app' 2>/dev/null | head -1)"; do
+            if [ -d "$path" ] && [ -n "$path" ]; then
+              APP_PATH="$path"
+              break
+            fi
+          done
+          echo "Found app at: $APP_PATH"
+          if [ -d "$APP_PATH" ]; then
             ZIP_PATH="release/math-kids-mac-universal.zip"
-            cd release
             rm -f "$ZIP_PATH"
-            zip -r "$ZIP_PATH" "$APP_NAME"
-            cd ..
+            cd "$(dirname "$APP_PATH")"
+            zip -r "$ZIP_PATH" "$(basename "$APP_PATH")"
+            echo "Zipped successfully"
             gh release upload v1.0.0-gaming "$ZIP_PATH" --clobber --repo forrestinfo/math-kids
-            echo "✅ Uploaded mac app to release"
+            echo "✅ Uploaded mac app to release v1.0.0-gaming"
+          else
+            echo "ERROR: .app not found"
+            exit 1
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
