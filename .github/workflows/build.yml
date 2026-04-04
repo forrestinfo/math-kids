@@ -73,29 +73,14 @@ jobs:
         run: |
           npx vite build
           npx electron-builder --mac --universal
-      - name: Debug release dir
+      - name: Upload .app to GitHub Release
         run: |
-          find release -type d -name "*.app"
-          ls -la release/
-        shell: bash
-      - name: Upload .app as Release asset
-        run: |
-          APP_DIR=$(find release -type d -name "*.app" | head -1)
-          if [ -z "$APP_DIR" ]; then
-            APP_DIR="release/mac-universal/math-kids.app"
-          fi
-          if [ -d "$APP_DIR" ]; then
-            APP_NAME=$(basename "$APP_DIR")
-            ZIP_PATH="release/math-kids-mac-universal.zip"
-            rm -f "$ZIP_PATH"
-            cd release
-            zip -r "$ZIP_PATH" "$APP_NAME"
-            cd ..
-            gh release upload v1.0.0-gaming "$ZIP_PATH" --clobber --repo forrestinfo/math-kids
-          else
-            echo "ERROR: app not found at $APP_DIR"
-            exit 1
-          fi
+          cd release/mac-universal
+          rm -f ../math-kids-mac-universal.zip
+          zip -r ../math-kids-mac-universal.zip math-kids.app
+          cd ../..
+          gh release upload v1.0.0-gaming release/math-kids-mac-universal.zip --clobber --repo forrestinfo/math-kids
+          echo "Uploaded mac app"
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
