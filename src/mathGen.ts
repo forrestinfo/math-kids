@@ -26,17 +26,27 @@ export function generateQuestion(difficulty: Difficulty): Question {
       operator = '×'
       break
 
+    case 'DIVIDE_TABLE': {
+      // 表内除法：让结果为 1~9，除数为 1~9，确保整除
+      operator = '÷'
+      const divisor = randInt(1, 9)
+      const quotient = randInt(1, 9)
+      num1 = divisor * quotient
+      num2 = divisor
+      break
+    }
+
     case 'ADD2to2': {
       operator = '+'
+      // 两位数加法：10~99
       num1 = randInt(10, 99)
       num2 = randInt(10, 99)
-      num1 = Math.round(num1 / 1) * 1
-      num2 = Math.round(num2 / 1) * 1
       break
     }
 
     case 'SUB2to2': {
       operator = '-'
+      // 两位数减法：保证为正
       num1 = randInt(30, 99)
       num2 = randInt(10, num1 - 1)
       break
@@ -72,6 +82,53 @@ export function generateQuestion(difficulty: Difficulty): Question {
       num2 = randInt(100, num1 - 1)
       while (num2 >= num1) {
         num2 = randInt(100, num1 - 10)
+      }
+      break
+    }
+
+    case 'MULTIPLY_3_PATTERN': {
+      operator = '×'
+      // 三位数乘法（规律）：优先给“整十/整百”等可口算的模式
+      // 1) 三位数 × 10/20/.../90
+      // 2) 三位数 × 100/200/.../900
+      // 3) (100~999) × 11（类 11 技巧的扩展）
+      const pattern = randInt(1, 3)
+      if (pattern === 1) {
+        num1 = randInt(10, 99) * 10 // 100~990
+        num2 = randInt(1, 9) * 10  // 10~90
+      } else if (pattern === 2) {
+        num1 = randInt(10, 99) * 10 // 100~990
+        num2 = randInt(1, 9) * 100  // 100~900
+      } else {
+        num1 = randInt(100, 999)
+        num2 = 11
+      }
+      break
+    }
+
+    case 'DIVIDE_3_PATTERN': {
+      operator = '÷'
+      // 三位数除法（规律）：确保整除，且多为整十/整百结果
+      // 1) (100~900) ÷ 10/20/.../90
+      // 2) (100~900) ÷ 2/3/4/5/6/8/9（整除）
+      const pattern = randInt(1, 2)
+      if (pattern === 1) {
+        const divisor = randInt(1, 9) * 10 // 10~90
+        const quotient = randInt(10, 99)  // 10~99
+        num1 = divisor * quotient
+        // 控制在三位数范围
+        num1 = clamp(num1, 100, 999)
+        num2 = divisor
+        // 再次确保整除（若 clamp 破坏整除就回退）
+        num1 = divisor * Math.floor(num1 / divisor)
+        if (num1 < 100) num1 = divisor * 10
+      } else {
+        const divisorOptions = [2, 3, 4, 5, 6, 8, 9]
+        const divisor = divisorOptions[randInt(0, divisorOptions.length - 1)]
+        const quotient = randInt(20, 99)
+        num1 = divisor * quotient
+        if (num1 > 999) num1 = divisor * randInt(20, 99)
+        num2 = divisor
       }
       break
     }
@@ -198,6 +255,14 @@ export function generateQuestion(difficulty: Difficulty): Question {
       operator = '×'
       break
     }
+
+    default: {
+      // fallback: avoid crash
+      operator = '+'
+      num1 = randInt(10, 99)
+      num2 = randInt(10, 99)
+      break
+    }
   }
 
   const answer = operator === '×'
@@ -318,17 +383,26 @@ export function speakText(text: string): void {
 // 技巧速算口诀（显示在题目下方提示）
 export const TECHNIQUE_TIPS: Record<Difficulty, string | null> = {
   MULTIPLY_1to9: null,              // 普通乘法口诀，无需提示
+  DIVIDE_TABLE: null,
+
   ADD2to2: null,
   SUB2to2: null,
+
   ADD2to3: null,
   SUB2to3: null,
   ADD3to3: null,
   SUB3to3: null,
+
+  MULTIPLY_3_PATTERN: null,
+  DIVIDE_3_PATTERN: null,
+
   SQUARE_END5: '十位×(十位+1)，后面写上25',
+
   ADD3to4: null,
   SUB3to4: null,
   ADD4to4: null,
   SUB4to4: null,
+
   MULTIPLY_5: '偶数先÷2，后面写上0',
   MULTIPLY_9: '×10再减掉自己',
   MULTIPLY_11: '两头一拉，中间相加',

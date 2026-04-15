@@ -19,17 +19,13 @@ export interface User {
 }
 
 export type Difficulty =
+  // 表内乘除（1~9）
   | 'MULTIPLY_1to9'
+  | 'DIVIDE_TABLE'
+  // 两位数加减（入门）
   | 'ADD2to2'
   | 'SUB2to2'
-  | 'ADD2to3'
-  | 'SUB2to3'
-  | 'ADD3to3'
-  | 'SUB3to3'
-  | 'ADD3to4'
-  | 'SUB3to4'
-  | 'ADD4to4'
-  | 'SUB4to4'
+  // 口算技巧
   | 'SQUARE_END5'
   | 'MULTIPLY_5'
   | 'MULTIPLY_9'
@@ -38,23 +34,49 @@ export type Difficulty =
   | 'COMPENSATE_ADD'
   | 'SAME_TENS_DIFF_ONES'
   | 'SPECIAL_SQUARE'
+  // 三位数加减
+  | 'ADD2to3'
+  | 'SUB2to3'
+  | 'ADD3to3'
+  | 'SUB3to3'
+  // 三位数乘除（有规律的）
+  | 'MULTIPLY_3_PATTERN'
+  | 'DIVIDE_3_PATTERN'
+  // 旧的更高位难度（暂保留给后续扩展）
+  | 'ADD3to4'
+  | 'SUB3to4'
+  | 'ADD4to4'
+  | 'SUB4to4'
 
+// 难度顺序（用于：
+// 1) 关卡推进时的“升阶推荐”
+// 2) 自由练习的默认排序
+// 目标顺序：两位数加减 → 表内乘除 → 口算技巧 → 三位数加减 → 三位数乘除（规律）
 export const DIFFICULTY_ORDER: Difficulty[] = [
-  'MULTIPLY_1to9',
   'ADD2to2',
   'SUB2to2',
-  'SQUARE_END5',
+
+  'MULTIPLY_1to9',
+  'DIVIDE_TABLE',
+
+  'COMPENSATE_ADD',
   'MULTIPLY_5',
   'MULTIPLY_9',
-  'DIVIDE_5',
   'MULTIPLY_11',
-  'COMPENSATE_ADD',
+  'DIVIDE_5',
+  'SQUARE_END5',
   'SAME_TENS_DIFF_ONES',
   'SPECIAL_SQUARE',
+
   'ADD2to3',
   'SUB2to3',
   'ADD3to3',
   'SUB3to3',
+
+  'MULTIPLY_3_PATTERN',
+  'DIVIDE_3_PATTERN',
+
+  // legacy high-digit difficulties
   'ADD3to4',
   'SUB3to4',
   'ADD4to4',
@@ -63,12 +85,19 @@ export const DIFFICULTY_ORDER: Difficulty[] = [
 
 export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   MULTIPLY_1to9: '乘法口诀',
+  DIVIDE_TABLE: '表内除法',
+
   ADD2to2: '两位数加法',
   SUB2to2: '两位数减法',
+
   ADD2to3: '三位数加两位数',
   SUB2to3: '三位数减两位数',
   ADD3to3: '三位数加法',
   SUB3to3: '三位数减法',
+
+  MULTIPLY_3_PATTERN: '三位数乘法（规律）',
+  DIVIDE_3_PATTERN: '三位数除法（规律）',
+
   SQUARE_END5: '平方数速算',
   ADD3to4: '四位数加三位数',
   SUB3to4: '四位数减三位数',
@@ -84,10 +113,21 @@ export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
 }
 
 export const DIFFICULTY_CATEGORIES: Record<string, Difficulty[]> = {
-  '乘法': ['MULTIPLY_1to9', 'SQUARE_END5'],
-  '两位数': ['ADD2to2', 'SUB2to2'],
-  '三位数': ['ADD2to3', 'SUB2to3', 'ADD3to3', 'SUB3to3'],
-  '四位数': ['ADD3to4', 'SUB3to4', 'ADD4to4', 'SUB4to4'],
+  '两位数加减': ['ADD2to2', 'SUB2to2'],
+  '表内乘除': ['MULTIPLY_1to9', 'DIVIDE_TABLE'],
+  '口算技巧': [
+    'COMPENSATE_ADD',
+    'MULTIPLY_5',
+    'MULTIPLY_9',
+    'MULTIPLY_11',
+    'DIVIDE_5',
+    'SQUARE_END5',
+    'SAME_TENS_DIFF_ONES',
+    'SPECIAL_SQUARE',
+  ],
+  '三位数加减': ['ADD2to3', 'SUB2to3', 'ADD3to3', 'SUB3to3'],
+  '三位数乘除（规律）': ['MULTIPLY_3_PATTERN', 'DIVIDE_3_PATTERN'],
+  '更高位（暂存）': ['ADD3to4', 'SUB3to4', 'ADD4to4', 'SUB4to4'],
 }
 
 export interface Question {
