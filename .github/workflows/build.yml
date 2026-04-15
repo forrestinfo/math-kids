@@ -74,7 +74,6 @@ jobs:
         shell: bash
         run: |
           echo "ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/" >> $GITHUB_ENV
-          echo "ELECTRON_CUSTOM_DIR={{ version }}" >> $GITHUB_ENV
       - name: Install dependencies
         run: npm ci
       - name: Build & Package
