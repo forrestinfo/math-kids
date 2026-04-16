@@ -359,12 +359,15 @@ function getUnlockedLevels(user: User): number { return Object.values(user.level
 // ============== 自由练习设置 ==============
 function renderSetup(): string {
   if (!currentUser) return renderUserSelect()
+
+  // 顺序与整体难度递增一致：两位数加减 → 表内乘除 → 口算技巧 → 三位数加减 → 三位数乘除（规律） → 更高位（暂存）
   const cats = [
-    { i: 0, emoji: '🌸', label: '乘法口诀' },
-    { i: 1, emoji: '✨', label: '技巧速算' },
-    { i: 2, emoji: '🌺', label: '两位数加减' },
+    { i: 0, emoji: '🌺', label: '两位数加减' },
+    { i: 1, emoji: '🌸', label: '表内乘除' },
+    { i: 2, emoji: '✨', label: '口算技巧' },
     { i: 3, emoji: '🌻', label: '三位数加减' },
-    { i: 4, emoji: '🌷', label: '四位数加减' },
+    { i: 4, emoji: '🏆', label: '三位数乘除（规律）' },
+    { i: 5, emoji: '🧩', label: '更高位（暂存）' },
   ]
 
   return `<div class="screen setup-screen">
@@ -800,7 +803,15 @@ function handleAction(e: Event) {
     case 'back-from-setup': { screen = 'main-menu'; render(); break }
     case 'do-start-free': {
       const allDiffs: Difficulty[] = []
-      const catMap: Record<number, Difficulty[]> = { 0: ['MULTIPLY_1to9'], 1: ['SQUARE_END5', 'MULTIPLY_5', 'MULTIPLY_9', 'MULTIPLY_11', 'DIVIDE_5', 'COMPENSATE_ADD', 'SAME_TENS_DIFF_ONES', 'SPECIAL_SQUARE'], 2: ['ADD2to2', 'SUB2to2'], 3: ['ADD2to3', 'SUB2to3', 'ADD3to3', 'SUB3to3'], 4: ['ADD3to4', 'SUB3to4', 'ADD4to4', 'SUB4to4'] }
+      // 顺序与整体难度递增一致：两位数加减 → 表内乘除 → 口算技巧 → 三位数加减 → 三位数乘除（规律） → 更高位（暂存）
+      const catMap: Record<number, Difficulty[]> = {
+        0: ['ADD2to2', 'SUB2to2'],
+        1: ['MULTIPLY_1to9', 'DIVIDE_TABLE'],
+        2: ['COMPENSATE_ADD', 'MULTIPLY_5', 'MULTIPLY_9', 'MULTIPLY_11', 'DIVIDE_5', 'SQUARE_END5', 'SAME_TENS_DIFF_ONES', 'SPECIAL_SQUARE'],
+        3: ['ADD2to3', 'SUB2to3', 'ADD3to3', 'SUB3to3'],
+        4: ['MULTIPLY_3_PATTERN', 'DIVIDE_3_PATTERN'],
+        5: ['ADD3to4', 'SUB3to4', 'ADD4to4', 'SUB4to4'],
+      }
       for (const idx of selectedCategories) allDiffs.push(...(catMap[idx] || []))
       if (allDiffs.length === 0) allDiffs.push(currentUser!.difficulty)
       initDiffStats(allDiffs); startFreeGame(allDiffs, selectedQuestionCount as 30 | 50)
