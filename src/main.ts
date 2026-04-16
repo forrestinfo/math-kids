@@ -480,11 +480,11 @@ function renderMainMenu(): string {
 function renderWorldMap(): string {
   if (!currentUser) return renderUserSelect()
   const worlds = [
-    { id: 'world1', emoji: '🌸', name: '加法森林', color: '#ff6699', desc: '加法从这里开始！' },
-    { id: 'world2', emoji: '🌟', name: '减法洞穴', color: '#9b59b6', desc: '减法探险之旅！' },
-    { id: 'world3', emoji: '✨', name: '乘法水晶矿', color: '#3498db', desc: '开启速算超能力！' },
-    { id: 'world4', emoji: '🔮', name: '除法魔法塔', color: '#e67e22', desc: '挑战除法奥秘！' },
-    { id: 'world5', emoji: '🏆', name: '大师赛', color: '#e74c3c', desc: '综合挑战速算之王！' },
+    { id: 'world1', emoji: '🌺', name: '两位数加减', color: '#ff6699', desc: '先从两位数加减练起，打好基础！' },
+    { id: 'world2', emoji: '🌸', name: '表内乘除', color: '#3498db', desc: '乘法口诀 + 表内除法，速度起飞！' },
+    { id: 'world3', emoji: '✨', name: '口算技巧', color: '#9b59b6', desc: '掌握技巧，算得又快又准！' },
+    { id: 'world4', emoji: '🌻', name: '三位数加减', color: '#e67e22', desc: '进阶到三位数加减，稳步升级！' },
+    { id: 'world5', emoji: '🏆', name: '高手进阶', color: '#e74c3c', desc: '规律乘除 + 综合挑战，冲刺速算大师！' },
   ]
 
   const worldCards = worlds.map(w => {
@@ -516,11 +516,11 @@ function renderWorldMap(): string {
 function renderLevelSelect(): string {
   if (!currentUser || !currentWorldId) return renderWorldMap()
   const worldMeta: Record<string, { emoji: string; name: string; color: string }> = {
-    world1: { emoji: '🌸', name: '加法森林', color: '#ff6699' },
-    world2: { emoji: '🌟', name: '减法洞穴', color: '#9b59b6' },
-    world3: { emoji: '✨', name: '乘法水晶矿', color: '#3498db' },
-    world4: { emoji: '🔮', name: '除法魔法塔', color: '#e67e22' },
-    world5: { emoji: '🏆', name: '大师赛', color: '#e74c3c' },
+    world1: { emoji: '🌺', name: '两位数加减', color: '#ff6699' },
+    world2: { emoji: '🌸', name: '表内乘除', color: '#3498db' },
+    world3: { emoji: '✨', name: '口算技巧', color: '#9b59b6' },
+    world4: { emoji: '🌻', name: '三位数加减', color: '#e67e22' },
+    world5: { emoji: '🏆', name: '高手进阶', color: '#e74c3c' },
   }
   const wm = worldMeta[currentWorldId] || { emoji: '🌍', name: '未知', color: '#888' }
   const levels = getWorldLevels(currentWorldId)
