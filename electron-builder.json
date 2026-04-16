@@ -40,5 +40,6 @@
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true
-  }
+  },
+  "asar": false
 }
