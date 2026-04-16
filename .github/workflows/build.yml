@@ -82,6 +82,8 @@ jobs:
         run: |
           npx vite build
           npx electron-builder --mac --arm64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Zip .app and upload to GitHub Release
         run: |
           APP=$(find release -maxdepth 3 -name "*.app" -type d | head -1)
