@@ -3,6 +3,9 @@ permissions:
 
 name: Build Desktop App
 
+env:
+  RELEASE_TAG: v1.0.1-difficulty
+
 on:
   workflow_dispatch:
   push:
@@ -45,16 +48,15 @@ jobs:
           npx electron-builder --${{ matrix.target }} --${{ matrix.arch }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload to GitHub Release
+      - name: Upload to GitHub Release (best-effort)
         run: |
-          PLATFORM="${{ matrix.target }}"
-          if [ "$PLATFORM" = "win" ]; then
-            FILE=$(find release -name "*.exe" -type f | head -1)
-          else
-            FILE=$(find release -name "*.tar.gz" -type f | head -1)
-          fi
+          # NOTE: current electron-builder config uses "dir" target on Windows/mac.
+          # This step only uploads when a common archive/installer artifact is found.
+          FILE=$(find release -maxdepth 2 \( -name "*.exe" -o -name "*.msi" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" -o -name "*.tar.gz" -o -name "*.zip" \) -type f | head -1)
           if [ -n "$FILE" ]; then
-            gh release upload v1.0.0-gaming "$FILE" --clobber --repo forrestinfo/math-kids
+            gh release upload "$RELEASE_TAG" "$FILE" --clobber --repo forrestinfo/math-kids
+          else
+            echo "No uploadable artifact found (dir targets). Skipping upload."
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -76,18 +78,20 @@ jobs:
           echo "ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/" >> $GITHUB_ENV
       - name: Install dependencies
         run: npm ci
-      - name: Build & Package
+      - name: Build & Package (mac arm64)
         run: |
           npx vite build
-          npx electron-builder --mac --universal
-      - name: Upload .app to GitHub Release
+          npx electron-builder --mac --arm64
+      - name: Zip .app and upload to GitHub Release
         run: |
-          cd release/mac-universal
-          rm -f ../math-kids-mac-universal.zip
-          zip -r ../math-kids-mac-universal.zip math-kids.app
-          cd ../..
-          gh release upload v1.0.0-gaming release/math-kids-mac-universal.zip --clobber --repo forrestinfo/math-kids
-          echo "Uploaded mac app"
+          APP=$(find release -maxdepth 3 -name "*.app" -type d | head -1)
+          if [ -z "$APP" ]; then
+            echo "No .app found under release/" && exit 1
+          fi
+          rm -f release/math-kids-mac-arm64.zip
+          ditto -c -k --sequesterRsrc --keepParent "$APP" release/math-kids-mac-arm64.zip
+          gh release upload "$RELEASE_TAG" release/math-kids-mac-arm64.zip --clobber --repo forrestinfo/math-kids
+          echo "Uploaded mac arm64 app"
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
