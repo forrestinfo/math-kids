@@ -1,7 +1,7 @@
 {
-  "name": "math-kids",
+  "name": "anna-math",
   "version": "1.0.0",
-  "description": "儿童计算小程序 - 美乐蒂风格",
+  "description": "安娜口算 - 儿童数学探索城市",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",

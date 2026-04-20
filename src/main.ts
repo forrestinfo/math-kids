@@ -4,6 +4,7 @@ import { generateBatch, generateQuestion, speakQuestion, speakText, TECHNIQUE_TI
 import { audioManager } from './audio'
 import { TECHNIQUES_META, renderStepsHTML } from './techniques'
 import { GAME_LEVELS, getWorldLevels, getLevelStars, isLevelUnlocked, getLevelById, getCharacterById, CHARACTERS } from './levels'
+import { cityManager } from './cityManager'
 
 // ============== 状态 ==============
 let users: User[] = []
@@ -68,6 +69,146 @@ function getTechniqueSteps(difficulty: Difficulty): string[] | null {
     case 'MULTIPLY_11': { const tens = Math.floor(q.num1 / 10); const ones = q.num1 % 10; const sum = tens + ones; if (sum >= 10) { const carry = Math.floor(sum / 10); const middle = sum % 10; return [`${q.num1}×11`, `${tens}_${ones} → ${tens}+${ones}=${sum}，进位${carry}`, `→ ${tens + carry}${middle}${ones} = ${q.answer}`] } return [`${q.num1}×11`, `${tens}_${ones} → ${tens}+${ones}=${sum}`, `→ ${tens}${sum}${ones} = ${q.answer}`] }
     case 'DIVIDE_5': { const step2 = q.num1 * 2; return [`${q.num1}÷5`, `= ${q.num1}×2÷10`, `= ${step2}÷10`, `= ${q.answer}`] }
     case 'COMPENSATE_ADD': { const lastA = q.num1 % 10; const aNear = (lastA >= 1 && lastA <= 4) || (lastA >= 6 && lastA <= 9); const near = aNear ? q.num1 : q.num2; const other = aNear ? q.num2 : q.num1; const round = Math.ceil(near / 10) * 10; const comp = round - near; return [`${q.num1}+${q.num2}`, `凑整：${near}凑成${round}，补${comp}`, `= ${round}+${other}-${comp}`, `= ${q.answer}`] }
+    case 'COMPENSATE_SUBTRACT': { const round = Math.ceil(q.num2 / 10) * 10; const comp = round - q.num2; return [`${q.num1}-${q.num2}`, `凑整：把${q.num2}看成${round}，多减了${comp}`, `= ${q.num1}-${round}+${comp}`, `= ${q.answer}`] }
+    case 'MULTIPLY_DISTRIBUTIVE': { 
+      // 找出因数配对
+      let factor = 0;
+      let pairResult = 0;
+      if (q.num2 === 25 && q.num1 % 4 === 0) { factor = 4; pairResult = 100; }
+      else if (q.num2 === 125 && q.num1 % 8 === 0) { factor = 8; pairResult = 1000; }
+      else if (q.num2 === 20 && q.num1 % 5 === 0) { factor = 5; pairResult = 100; }
+      else if (q.num2 === 50 && q.num1 % 2 === 0) { factor = 2; pairResult = 100; }
+      else { 
+        // 默认情况
+        if (q.num1 % 4 === 0 && q.num2 === 25) { factor = 4; pairResult = 100; }
+        else if (q.num1 % 8 === 0 && q.num2 === 125) { factor = 8; pairResult = 1000; }
+        else if (q.num1 % 5 === 0 && q.num2 === 20) { factor = 5; pairResult = 100; }
+        else if (q.num1 % 2 === 0 && q.num2 === 50) { factor = 2; pairResult = 100; }
+        else { factor = 1; pairResult = q.num2; }
+      }
+      const simplified = q.num1 / factor;
+      const expanded = q.num2 * factor;
+      return [`${q.num1}×${q.num2}`, `分配律：${q.num1}÷${factor}=${simplified}，${q.num2}×${factor}=${expanded}`, `= ${simplified}×${expanded}`, `= ${simplified}×${pairResult}`, `= ${q.answer}`];
+    }
+    case 'NEAR_100_MULTIPLY': { 
+      // 提取a和b：一个数=100-a，另一个=100+b
+      let a = 0, b = 0;
+      if (q.num1 < 100 && q.num2 > 100) { a = 100 - q.num1; b = q.num2 - 100; }
+      else if (q.num2 < 100 && q.num1 > 100) { a = 100 - q.num2; b = q.num1 - 100; }
+      else { 
+        // 默认情况，应该不会发生
+        a = Math.min(100 - q.num1, 100 - q.num2);
+        b = Math.max(q.num1 - 100, q.num2 - 100);
+      }
+      const diff = b - a;
+      const middleTerm = 100 * diff;
+      const product = a * b;
+      return [`${q.num1}×${q.num2}`, `看成：(100-${a})×(100+${b})`, `= 100×100 + 100×${b} - ${a}×100 - ${a}×${b}`, `= 10000 + ${100 * b} - ${100 * a} - ${product}`, `= ${10000 + middleTerm - product}`, `= ${q.answer}`];
+    }
+    case 'PERCENTAGE_QUICK': {
+      // 百分比快速计算
+      const percentage = q.num2;
+      const base = q.num1;
+      let decomposition = '';
+      
+      if (percentage === 15) decomposition = '10% + 5%';
+      else if (percentage === 18) decomposition = '10% + 8%';
+      else if (percentage === 25) decomposition = '10% + 15%';
+      else if (percentage === 35) decomposition = '10% + 25%';
+      else if (percentage === 45) decomposition = '10% + 35%';
+      else decomposition = `${percentage}%`;
+      
+      return [
+        `${base}×${percentage}%`,
+        `= ${base}×(${decomposition})`,
+        `= ${base}×${percentage / 100}`,
+        `= ${q.answer}`,
+      ];
+    }
+    case 'FRACTION_CONVERT': {
+      // 分数快速转换
+      const base = q.num1;
+      const denominator = q.num2;
+      let fraction = '';
+      let decimal = 0;
+      
+      // 根据分母确定分数
+      if (denominator === 8) {
+        if (base % 8 === 0) fraction = `${base / 8}/8`;
+        else fraction = `${Math.round(base / denominator)}/8`;
+        decimal = 0.125 * (base / denominator);
+      } else if (denominator === 4) {
+        if (base % 4 === 0) fraction = `${base / 4}/4`;
+        else fraction = `${Math.round(base / denominator)}/4`;
+        decimal = 0.25 * (base / denominator);
+      } else if (denominator === 5) {
+        if (base % 5 === 0) fraction = `${base / 5}/5`;
+        else fraction = `${Math.round(base / denominator)}/5`;
+        decimal = 0.2 * (base / denominator);
+      }
+      
+      return [
+        `${base}×${fraction}`,
+        `记忆：${fraction} = ${decimal.toFixed(3)}`,
+        `= ${base}×${decimal.toFixed(3)}`,
+        `= ${q.answer}`,
+      ];
+    }
+    case 'SQUARE_DIFFERENCE': {
+      // 平方差公式
+      const center = (q.num1 + q.num2) / 2;
+      return [
+        `${q.num1}×${q.num2}`,
+        `平方差公式：(${center}-1)×(${center}+1) = ${center}² - 1²`,
+        `= ${center * center} - 1`,
+        `= ${q.answer}`,
+      ];
+    }
+    case 'MULTIPLE_FEATURES': {
+      // 倍数特征判断
+      const num = q.num1;
+      const multiple = q.num2;
+      let isMultiple = q.answer === 1; // 1表示是倍数，0表示不是
+      let rule = '';
+      let analysis = '';
+      
+      switch (multiple) {
+        case 2:
+          rule = '个位是0、2、4、6、8';
+          analysis = `${num}的个位是 ${num % 10}`;
+          break;
+        case 3:
+          const sum3 = String(num).split('').reduce((a, b) => a + parseInt(b), 0);
+          rule = '各位数字之和是3的倍数';
+          analysis = `${num}的各位数字之和：${String(num).split('').join('+')} = ${sum3}`;
+          break;
+        case 4:
+          const lastTwo4 = num % 100;
+          rule = '末两位是4的倍数';
+          analysis = `${num}的末两位是 ${lastTwo4}`;
+          break;
+        case 5:
+          rule = '个位是0或5';
+          analysis = `${num}的个位是 ${num % 10}`;
+          break;
+        case 9:
+          const sum9 = String(num).split('').reduce((a, b) => a + parseInt(b), 0);
+          rule = '各位数字之和是9的倍数';
+          analysis = `${num}的各位数字之和：${String(num).split('').join('+')} = ${sum9}`;
+          break;
+        case 10:
+          rule = '个位是0';
+          analysis = `${num}的个位是 ${num % 10}`;
+          break;
+      }
+      
+      return [
+        `判断 ${num} 是否是${multiple}的倍数`,
+        `规则：${rule}`,
+        analysis,
+        isMultiple ? `是${multiple}的倍数` : `不是${multiple}的倍数`,
+      ];
+    }
     case 'SAME_TENS_DIFF_ONES': { const a = Math.floor(q.num1 / 10); const b = q.num1 % 10; const c = q.num2 % 10; const front = a * (a + 1); const product = b * c; const productStr = product < 10 ? `0${product}` : String(product); return [`${q.num1}×${q.num2}`, `十位相同(${a})，个位相加=10`, `${a}×${a + 1}=${front}，${b}×${c}=${product}`, `→ ${front}${productStr} = ${q.answer}`] }
     case 'SPECIAL_SQUARE': { const n = q.num1 - 10; return [`${q.num1}²`, `= (10+${n})²`, `= 100 + ${20 * n} + ${n * n}`, `= ${q.answer}`] }
     default: return null

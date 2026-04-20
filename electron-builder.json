@@ -1,6 +1,6 @@
 {
-  "appId": "com.mathkids.app",
-  "productName": "math-kids",
+  "appId": "com.annamath.app",
+  "productName": "安娜口算",
   "directories": {
     "output": "release"
   },

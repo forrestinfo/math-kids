@@ -236,6 +236,128 @@ export function generateQuestion(difficulty: Difficulty): Question {
       break
     }
 
+    // 凑整减法：把接近整十的减数凑成整十，减完再加补数
+    case 'COMPENSATE_SUBTRACT': {
+      operator = '-'
+      // 生成接近整十的减数
+      const baseTens = randInt(1, 9) * 10
+      const lastDigits = [1, 2, 3, 4, 6, 7, 8, 9]
+      const last = lastDigits[randInt(0, 7)]
+      const nearNum = baseTens + last  // 接近整十的减数
+      // 被减数要大于减数，且留有余地
+      const minMinuend = nearNum + 15  // 至少比减数大15
+      const maxMinuend = minMinuend + 40 // 范围适当
+      num1 = randInt(minMinuend, maxMinuend)
+      num2 = nearNum
+      break
+    }
+
+    // 乘法分配律：分解因数，凑成整百整千
+    case 'MULTIPLY_DISTRIBUTIVE': {
+      operator = '×'
+      // 常见配对：4×25=100, 8×125=1000, 5×20=100, 2×50=100
+      const pairs = [
+        { factor: 4, multiplier: 25, result: 100 },
+        { factor: 8, multiplier: 125, result: 1000 },
+        { factor: 5, multiplier: 20, result: 100 },
+        { factor: 2, multiplier: 50, result: 100 },
+      ]
+      const pair = pairs[randInt(0, pairs.length - 1)]
+      // 生成能被factor整除的数
+      const base = randInt(3, 12) * pair.factor  // 12~48, 16~96等
+      num1 = base
+      num2 = pair.multiplier
+      break
+    }
+
+    // 接近100的乘法：(100-a)×(100+b)
+    case 'NEAR_100_MULTIPLY': {
+      operator = '×'
+      // 生成接近100的数：一个小于100，一个大于100
+      const a = randInt(1, 9)  // 2~9的差值
+      const b = randInt(1, 9)  // 1~9的差值
+      
+      // 随机决定哪个数小于100，哪个大于100
+      if (Math.random() > 0.5) {
+        num1 = 100 - a
+        num2 = 100 + b
+      } else {
+        num1 = 100 + b
+        num2 = 100 - a
+      }
+      break
+    }
+
+    // 百分比快速计算
+    case 'PERCENTAGE_QUICK': {
+      operator = '×'
+      // 常见百分比分解：15%=10%+5%，18%=10%+8%，25%=10%+15%等
+      const percentages = [15, 18, 25, 35, 45]
+      const percentage = percentages[randInt(0, percentages.length - 1)]
+      // 生成一个适合计算的数
+      const base = randInt(20, 80) * 10  // 200, 300, ..., 800
+      num1 = base
+      num2 = percentage  // 这里代表百分比，题目会特殊处理
+      break
+    }
+
+    // 分数快速转换
+    case 'FRACTION_CONVERT': {
+      operator = '×'
+      // 常见分数转换
+      const fractions = [
+        { num: 1, den: 8, decimal: 0.125 },
+        { num: 3, den: 8, decimal: 0.375 },
+        { num: 5, den: 8, decimal: 0.625 },
+        { num: 7, den: 8, decimal: 0.875 },
+        { num: 1, den: 4, decimal: 0.25 },
+        { num: 3, den: 4, decimal: 0.75 },
+        { num: 1, den: 5, decimal: 0.2 },
+        { num: 2, den: 5, decimal: 0.4 },
+      ]
+      const fraction = fractions[randInt(0, fractions.length - 1)]
+      // 生成一个数乘以这个分数
+      const base = randInt(10, 50) * fraction.den  // 确保能整除
+      num1 = base
+      num2 = fraction.den  // 分母
+      break
+    }
+
+    // 平方差公式应用
+    case 'SQUARE_DIFFERENCE': {
+      operator = '×'
+      // 生成接近的数，差为2（为了用平方差公式）
+      const center = randInt(20, 80)  // 中心数
+      num1 = center - 1
+      num2 = center + 1
+      break
+    }
+
+    // 倍数特征判断
+    case 'MULTIPLE_FEATURES': {
+      // 这是一个特殊技巧，实际上是判断题
+      operator = '÷'  // 用除法符号表示判断
+      const multiples = [2, 3, 4, 5, 9, 10]
+      const multiple = multiples[randInt(0, multiples.length - 1)]
+      
+      // 生成一个数，可能是或不是该倍数
+      if (Math.random() > 0.5) {
+        // 生成是该倍数的数
+        const base = randInt(10, 30)
+        num1 = base * multiple
+      } else {
+        // 生成不是该倍数的数
+        const base = randInt(10, 30)
+        num1 = base * multiple + 1  // 加1确保不是倍数
+        // 如果是2的倍数且个位不是偶数，调整
+        if (multiple === 2 && num1 % 2 === 0) {
+          num1 += 1
+        }
+      }
+      num2 = multiple
+      break
+    }
+
     // 头同尾补：十位相同，个位相加=10
     case 'SAME_TENS_DIFF_ONES': {
       const a = randInt(1, 9)
@@ -310,7 +432,14 @@ export function getMaxDigits(difficulty: Difficulty): number {
     case 'MULTIPLY_9':
     case 'MULTIPLY_11':
     case 'SAME_TENS_DIFF_ONES':
-    case 'COMPENSATE_ADD': return 2  // 两位数运算
+    case 'COMPENSATE_ADD':
+    case 'COMPENSATE_SUBTRACT':
+    case 'MULTIPLY_DISTRIBUTIVE': return 2  // 两位数运算
+    case 'NEAR_100_MULTIPLY': return 3  // 91~109，三位数
+    case 'PERCENTAGE_QUICK': return 3  // 200-800，三位数
+    case 'FRACTION_CONVERT': return 3  // 基础数通常是三位数
+    case 'SQUARE_DIFFERENCE': return 2  // 两位数
+    case 'MULTIPLE_FEATURES': return 3  // 通常是三位数
     case 'DIVIDE_5': return 3  // 三位数除法结果
     default: return 4
   }
@@ -353,7 +482,14 @@ export function getNum2Digits(difficulty: Difficulty): number {
     case 'MULTIPLY_11':
     case 'SAME_TENS_DIFF_ONES': return 2
     case 'DIVIDE_5': return 1
-    case 'COMPENSATE_ADD': return 2
+    case 'COMPENSATE_ADD':
+    case 'COMPENSATE_SUBTRACT':
+    case 'MULTIPLY_DISTRIBUTIVE': return 2
+    case 'NEAR_100_MULTIPLY': return 3
+    case 'PERCENTAGE_QUICK': return 1  // 百分比数字如15、18等
+    case 'FRACTION_CONVERT': return 1  // 分母如8、4、5等
+    case 'SQUARE_DIFFERENCE': return 2  // 两位数
+    case 'MULTIPLE_FEATURES': return 1  // 倍数如2、3、4、5、9、10
     case 'SPECIAL_SQUARE': return 0  // 平方数
     default: return 4
   }
@@ -408,6 +544,13 @@ export const TECHNIQUE_TIPS: Record<Difficulty, string | null> = {
   MULTIPLY_11: '两头一拉，中间相加',
   DIVIDE_5: '先×2，再÷10',
   COMPENSATE_ADD: '凑成整十，算完再减补',
+  COMPENSATE_SUBTRACT: '凑成整十，减完再加补',
+  MULTIPLY_DISTRIBUTIVE: '分解因数，凑成整百整千',
+  NEAR_100_MULTIPLY: '(100-a)×(100+b)展开计算',
+  PERCENTAGE_QUICK: '分解百分比计算',
+  FRACTION_CONVERT: '分数小数转换记忆',
+  SQUARE_DIFFERENCE: '平方差公式应用',
+  MULTIPLE_FEATURES: '倍数特征判断',
   SAME_TENS_DIFF_ONES: '十位×(十位+1)，个位×个位',
   SPECIAL_SQUARE: '100加20n再加n²',
 }

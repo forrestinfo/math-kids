@@ -4,7 +4,7 @@ permissions:
 name: Build Desktop App
 
 env:
-  RELEASE_TAG: v1.0.1-difficulty
+  RELEASE_TAG: v1.0.0
 
 on:
   workflow_dispatch:
@@ -62,7 +62,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-mac:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'pull_request'
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -90,10 +90,10 @@ jobs:
           if [ -z "$APP" ]; then
             echo "No .app found under release/" && exit 1
           fi
-          rm -f release/math-kids-mac-arm64.zip
-          ditto -c -k --sequesterRsrc --keepParent "$APP" release/math-kids-mac-arm64.zip
-          gh release upload "$RELEASE_TAG" release/math-kids-mac-arm64.zip --clobber --repo forrestinfo/math-kids
-          echo "Uploaded mac arm64 app"
+          rm -f release/anna-math-mac-arm64.zip
+          ditto -c -k --sequesterRsrc --keepParent "$APP" release/anna-math-mac-arm64.zip
+          gh release upload "$RELEASE_TAG" release/anna-math-mac-arm64.zip --clobber --repo forrestinfo/math-kids
+          echo "Uploaded anna-math mac arm64 app"
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
